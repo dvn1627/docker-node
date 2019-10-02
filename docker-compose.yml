@@ -1,0 +1,67 @@
+version: "3"
+services:
+
+  nodejs:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: nodejs
+    container_name: nodejs
+    networks:
+      - app-network
+    # ports:
+    #   - "3000:3000"
+    volumes:
+    - ./web-root:/home/node/app
+    depends_on:
+      - mongo
+
+  web:
+    image: nginx:mainline-alpine
+    container_name: webserver
+    ports:
+      - "88:80"
+    volumes:
+      - ./nginx-conf:/etc/nginx/conf.d
+      
+    depends_on:
+      - nodejs
+      - mongo
+    networks:
+      - app-network
+
+  mongo:
+    image: mongo
+    container_name: mongo
+    # ports:
+    # - "27017:27017"
+    volumes:
+    - ./data-volume:/data/db
+    networks:
+      - app-network
+
+  sql:
+    image: mysql:5.7.27
+    container_name: sql
+    environment:
+      MYSQL_DATABASE: "${MYSQL_DATABASE}"
+      MYSQL_USER: "${MYSQL_USER}"
+      MYSQL_PASSWORD: "${MYSQL_PASSWORD}"
+      MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD}"
+    volumes:
+      - ./sql-volume:/var/lib/mysql
+    networks:
+      - app-network
+
+volumes:
+  web-root:
+    driver_opts:
+      type: none
+      device: /home/sammy/node_project/views/
+      o: bind
+  data-volume: {}
+  sql-volume: {}
+
+networks:
+  app-network:
+    driver: bridge
